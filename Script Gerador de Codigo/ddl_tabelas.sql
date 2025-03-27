@@ -35,14 +35,6 @@ CREATE TABLE Disciplina (
     id_departamento INT REFERENCES Departamento(id_departamento)
 );
 
--- -- Tabela: MatrizCurricular
--- CREATE TABLE MatrizCurricular (
---     id_matriz SERIAL PRIMARY KEY,
---     id_curso INT REFERENCES Curso(id_curso),
---     id_disciplina INT REFERENCES Disciplina(id_disciplina),
---     UNIQUE (id_curso, id_disciplina)
--- );
-
 -- Tabela: HistoricoEscolar
 CREATE TABLE HistoricoEscolar (
     id_historico SERIAL PRIMARY KEY,
