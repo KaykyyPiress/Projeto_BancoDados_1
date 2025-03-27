@@ -76,9 +76,9 @@ Projeto_Universidade/
 
 ## 📝 Autor
 
-- Kayky Pires de Paula R.A.: 22.222.040-2 (https://github.com/KaykyyPiress)
-- Mariane de Sousa Carvalho R.A: 22.123.105-3 (https://github.com/carvalhosmari)
-- Rafael Dias Silva Costa R.A.: 22.222.039-4 (https://github.com/rafadias008)
+- [Kayky Pires de Paula R.A.: 22.222.040-2] (https://github.com/KaykyyPiress)
+- [Mariane de Sousa Carvalho R.A: 22.123.105-3] (https://github.com/carvalhosmari)
+- [Rafael Dias Silva Costa R.A.: 22.222.039-4] (https://github.com/rafadias008)
 
 ---
 
