@@ -8,7 +8,9 @@ CREATE TABLE Departamento (
 CREATE TABLE Professor (
     id_professor SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    id_departamento INT REFERENCES Departamento(id_departamento),
+    cpf VARCHAR(20) UNIQUE NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    id_departamento INT REFERENCES Departamento(id_departamento) ON DELETE SET NULL,
     chefe_departamento BOOLEAN DEFAULT FALSE
 );
 
@@ -16,15 +18,18 @@ CREATE TABLE Professor (
 CREATE TABLE Curso (
     id_curso SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    id_departamento INT REFERENCES Departamento(id_departamento),
-    id_coordenador INT REFERENCES Professor(id_professor)
+    id_departamento INT NOT NULL REFERENCES Departamento(id_departamento) ON DELETE CASCADE,
+    id_coordenador INT REFERENCES Professor(id_professor) ON DELETE SET NULL
 );
 
 -- Tabela: Aluno
 CREATE TABLE Aluno (
     id_aluno SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    id_curso INT REFERENCES Curso(id_curso)
+    cpf VARCHAR(20) UNIQUE NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    matricula VARCHAR(20) UNIQUE NOT NULL,
+    id_curso INT REFERENCES Curso(id_curso) ON DELETE SET NULL
 );
 
 -- Tabela: Disciplina
@@ -32,24 +37,33 @@ CREATE TABLE Disciplina (
     id_disciplina SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     codigo VARCHAR(20) UNIQUE NOT NULL,
-    id_departamento INT REFERENCES Departamento(id_departamento)
+    id_departamento INT REFERENCES Departamento(id_departamento) ON DELETE SET NULL
 );
 
--- Tabela: HistoricoEscolar
-CREATE TABLE HistoricoEscolar (
+-- Tabela: Historico_Aluno
+CREATE TABLE Historico_Aluno (
     id_historico SERIAL PRIMARY KEY,
-    id_aluno INT REFERENCES Aluno(id_aluno),
-    id_disciplina INT REFERENCES Disciplina(id_disciplina),
+    id_aluno INT NOT NULL REFERENCES Aluno(id_aluno) ON DELETE CASCADE,
+    id_disciplina INT NOT NULL REFERENCES Disciplina(id_disciplina),
     semestre VARCHAR(10) NOT NULL,
-    status VARCHAR(20) CHECK (status IN ('aprovado', 'reprovado')),
+    nota DECIMAL(5,2) NOT NULL,
+    situacao VARCHAR(20) CHECK (situacao IN ('aprovado', 'reprovado')),
     id_professor INT REFERENCES Professor(id_professor)
+);
+
+-- Tabela: Historico_Professor
+CREATE TABLE Historico_Professor (
+    id_historico SERIAL PRIMARY KEY,
+    id_professor INT NOT NULL REFERENCES Professor(id_professor) ON DELETE CASCADE,
+    id_disciplina INT NOT NULL REFERENCES Disciplina(id_disciplina),
+    semestre VARCHAR(10) NOT NULL
 );
 
 -- Tabela: TCC
 CREATE TABLE TCC (
     id_tcc SERIAL PRIMARY KEY,
     titulo VARCHAR(255) NOT NULL,
-    id_orientador INT REFERENCES Professor(id_professor)
+    id_orientador INT NOT NULL REFERENCES Professor(id_professor)
 );
 
 -- Tabela: Aluno_TCC
