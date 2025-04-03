@@ -1,8 +1,8 @@
--- Tabela: Departamento
+-- Tabela: Departamento (sem restrição inline para id_chefe_departamento)
 CREATE TABLE Departamento (
     id_departamento SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    id_chefe_departamento INT REFERENCES Professor(id_professor) ON DELETE SET NULL
+    id_chefe_departamento INT  -- Será definida a FK posteriormente
 );
 
 -- Tabela: Professor
@@ -13,6 +13,11 @@ CREATE TABLE Professor (
     email VARCHAR(100) NOT NULL,
     id_departamento INT REFERENCES Departamento(id_departamento) ON DELETE SET NULL
 );
+
+-- Adiciona a restrição de chave estrangeira na tabela Departamento, agora que Professor já existe
+ALTER TABLE Departamento
+    ADD CONSTRAINT fk_departamento_chefe
+    FOREIGN KEY (id_chefe_departamento) REFERENCES Professor(id_professor) ON DELETE SET NULL;
 
 -- Tabela: Curso
 CREATE TABLE Curso (
