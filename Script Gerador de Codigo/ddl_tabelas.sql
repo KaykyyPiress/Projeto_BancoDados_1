@@ -68,7 +68,6 @@ CREATE TABLE TCC (
 
 -- Tabela: Aluno_TCC
 CREATE TABLE Aluno_TCC (
-    id_aluno_tcc SERIAL PRIMARY KEY,
     id_tcc INT REFERENCES TCC(id_tcc),
     id_aluno INT REFERENCES Aluno(id_aluno),
     UNIQUE (id_tcc, id_aluno)
