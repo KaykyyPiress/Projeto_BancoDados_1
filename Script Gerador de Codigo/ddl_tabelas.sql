@@ -1,7 +1,8 @@
 -- Tabela: Departamento
 CREATE TABLE Departamento (
     id_departamento SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL
+    nome VARCHAR(100) NOT NULL,
+    id_chefe_departamento INT REFERENCES Professor(id_professor) ON DELETE SET NULL
 );
 
 -- Tabela: Professor
@@ -10,8 +11,7 @@ CREATE TABLE Professor (
     nome VARCHAR(100) NOT NULL,
     cpf VARCHAR(20) UNIQUE NOT NULL,
     email VARCHAR(100) NOT NULL,
-    id_departamento INT REFERENCES Departamento(id_departamento) ON DELETE SET NULL,
-    chefe_departamento BOOLEAN DEFAULT FALSE
+    id_departamento INT REFERENCES Departamento(id_departamento) ON DELETE SET NULL
 );
 
 -- Tabela: Curso
