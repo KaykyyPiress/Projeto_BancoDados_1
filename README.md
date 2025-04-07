@@ -25,6 +25,13 @@ O projeto contempla:
 
 ---
 
+## 📷 MER e ME
+![ME](https://github.com/user-attachments/assets/142ceb4a-066a-4062-b6b2-f71e28e8fb9f)
+
+![MER](https://github.com/user-attachments/assets/2e5983a9-1eec-4828-837a-d451f9072eac)
+
+---
+
 ## ⚙️ Queries Implementadas
 
 Foram implementadas queries SQL específicas para validar a integridade e funcionalidade do sistema:
@@ -77,7 +84,7 @@ Projeto_Universidade/
 ## 📝 Autor
 
 - [Kayky Pires de Paula R.A.: 22.222.040-2](https://github.com/KaykyyPiress)
-- [Mariane de Sousa Carvalho R.A: 22.123.105-3](https://github.com/carvalhosmari)
+- [Mariane de Sousa Carvalho R.A.: 22.123.105-3](https://github.com/carvalhosmari)
 - [Rafael Dias Silva Costa R.A.: 22.222.039-4](https://github.com/rafadias008)
 
 ---
