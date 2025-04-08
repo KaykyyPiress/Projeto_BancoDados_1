@@ -41,7 +41,7 @@ def gerar_dml():
         id_departamento = random.choice(departamentos)['id']
         professores.append({"id": i, "id_departamento": id_departamento})
         dml_statements.append(
-            f"INSERT INTO Professor (id_professor, nome, cpf, email, id_departamento) VALUES ({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@exemplo.com.br', {id_departamento});"
+            f"INSERT INTO Professor (id_professor, nome, cpf, email, id_departamento) VALUES ({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@profFEI.com.br', {id_departamento});"
         )
 
     # Definindo chefes de departamento (1 por departamento)
@@ -67,7 +67,7 @@ def gerar_dml():
         matricula = f"MAT{i:05}"
         id_curso = random.choice(cursos)['id']
         alunos.append(i)
-        dml_statements.append(f"INSERT INTO Aluno (id_aluno, nome, cpf, email, matricula, id_curso) VALUES ({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@exemplo.com.br', '{matricula}', {id_curso});")
+        dml_statements.append(f"INSERT INTO Aluno (id_aluno, nome, cpf, email, matricula, id_curso) VALUES ({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@alunoFEI.com.br', '{matricula}', {id_curso});")
 
     # Inserindo Disciplinas
     disciplinas = []
