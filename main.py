@@ -1,5 +1,7 @@
+import os
 import random
 from faker import Faker
+import psycopg2
 
 fake = Faker('pt_BR')
 
@@ -91,9 +93,13 @@ def gerar_dml():
         )
 
     # Inserindo Histórico de Professores
+    # Seleciona apenas disciplinas do mesmo departamento do professor.
     for professor in professores:
+        disciplinas_prof = [d for d in disciplinas if d['id_departamento'] == professor['id_departamento']]
+        if not disciplinas_prof:
+            continue
         for _ in range(random.randint(1, 4)):
-            disciplina = random.choice(disciplinas)
+            disciplina = random.choice(disciplinas_prof)
             semestre = gerar_semestre()
             dml_statements.append(
                 f"INSERT INTO Historico_Professor (id_professor, id_disciplina, semestre) VALUES "
@@ -101,48 +107,41 @@ def gerar_dml():
             )
 
     # Inserindo Histórico de Alunos
-    # Para cada aluno, geramos os semestres e os processamos em ordem cronológica.
-    # A lógica garante:
-    #   - Se o aluno já foi aprovado em uma disciplina, não teremos novas tentativas para ela.
-    #   - Se o aluno falhar, em uma tentativa subsequente essa disciplina será forçada à aprovação.
-    #   - No último semestre, se restarem disciplinas com apenas reprovação, é inserida uma tentativa forçada de aprovação.
+    # Lógica que garante que, se um aluno reprovou, em alguma tentativa posterior ele obterá aprovação.
     for aluno_id in alunos:
-        aprovados = {}    # armazena disciplinas já aprovadas
-        tentativas = {}   # armazena disciplinas já tentadas (falha) sem aprovação ainda
+        aprovados = {}    # Registra disciplinas já aprovadas
+        tentativas = {}   # Registra disciplinas já tentadas e com falha (ainda não aprovadas)
 
-        # Gera um conjunto de semestres para o aluno
+        # Gera semestres únicos e ordenados cronologicamente para o aluno
         num_semestres = random.randint(2, 4)
         semestres_set = set()
         while len(semestres_set) < num_semestres:
             semestres_set.add(gerar_semestre())
 
-        # Converte as strings de semestre em tuplas para ordenar (ano, semestre, string_original)
         semestres_lista = []
         for s in semestres_set:
             ano_str, sem_str = s.split('/')
             semestres_lista.append((int(ano_str), int(sem_str), s))
         semestres_ordenados = sorted(semestres_lista, key=lambda x: (x[0], x[1]))
 
-        # Para cada semestre (processados em ordem)
+        # Processa cada semestre (em ordem)
         for i, (_, _, semestre) in enumerate(semestres_ordenados):
             is_last = (i == len(semestres_ordenados) - 1)
             disciplinas_no_semestre = set()
             quantidade = random.randint(4, 6)
-            iteracao = 0  # para evitar loops infinitos
+            iteracao = 0
             while len(disciplinas_no_semestre) < quantidade and iteracao < 100:
                 iteracao += 1
                 disciplina = random.choice(disciplinas)
                 disciplina_id = disciplina['id']
 
-                # Se disciplina já foi aprovada, não inserir nova tentativa
                 if disciplina_id in aprovados:
-                    continue
+                    continue  # Já aprovado, não tenta novamente
 
-                # Evita duplicidade neste mesmo semestre
                 if (semestre, disciplina_id) in disciplinas_no_semestre:
-                    continue
+                    continue  # Evita duplicidade neste semestre
 
-                # Se já houve tentativa (falha) anterior, forçamos aprovação para essa disciplina nesta nova tentativa
+                # Se já houve tentativa (falha) anterior para essa disciplina, forçamos aprovação.
                 if disciplina_id in tentativas:
                     nota = round(random.uniform(5, 10), 2)
                     situacao = 'aprovado'
@@ -158,19 +157,15 @@ def gerar_dml():
 
                 if situacao == 'aprovado':
                     aprovados[disciplina_id] = 'aprovado'
-                    # Se já houver registro de tentativa com falha, removemos, pois agora a disciplina foi aprovada
                     if disciplina_id in tentativas:
                         del tentativas[disciplina_id]
                 else:
-                    # Registra que houve tentativa (falha) para esta disciplina
                     if disciplina_id not in tentativas:
                         tentativas[disciplina_id] = 'reprovado'
 
                 disciplinas_no_semestre.add((semestre, disciplina_id))
 
-            # No último semestre, para garantir que todo aluno que reprovou em alguma disciplina tenha posteriormente a aprovação,
-            # percorremos as disciplinas com tentativa (falha) que ainda não foram aprovadas e inserimos um registro forçado de aprovação,
-            # caso essa disciplina ainda não tenha sido incluída neste semestre.
+            # No último semestre, garante que todas as disciplinas com tentativa anterior sejam aprovadas.
             if is_last:
                 for disc_id in list(tentativas.keys()):
                     if any(disc_id == did for (_, did) in disciplinas_no_semestre):
@@ -208,8 +203,56 @@ def gerar_dml():
     return "\n".join(dml_statements)
 
 
-# Gerando o arquivo DML
-with open("sql/dml_script.sql", "w", encoding='utf-8') as file:
-    file.write(gerar_dml())
+def execute_script(script):
+    """
+    Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
+    É necessário dividir o script em comandos individuais e executá-los.
+    """
+    # Atualize as credenciais do Supabase conforme seu projeto.
+    SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
+    SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
+    SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
+    SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
+    SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
 
-print("Script DML gerado com sucesso!")
+
+    try:
+        # Cria a conexão
+        conn = psycopg2.connect(
+            host=SUPABASE_HOST,
+            port=SUPABASE_PORT,
+            dbname=SUPABASE_DATABASE,
+            user=SUPABASE_USER,
+            password=SUPABASE_PASSWORD
+        )
+        cur = conn.cursor()
+        print("Conectado ao Supabase com sucesso.")
+
+        # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
+        comandos = script.split(";")
+        for comando in comandos:
+            comando = comando.strip()
+            if comando:
+                cur.execute(comando + ";")
+
+        conn.commit()
+        print("Todos os comandos foram executados com sucesso.")
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        print(f"Erro ao executar os comandos no Supabase: {e}")
+
+
+if __name__ == "__main__":
+    # Gera o script DML
+    script_dml = gerar_dml()
+
+    # Opcional: gravar o script em um arquivo
+    with open("sql/dml_script.txt", "w", encoding='utf-8') as file:
+        file.write(script_dml)
+    print("Script DML gerado e salvo com sucesso!")
+
+    # Executa o script no Supabase
+    execute_script(script_dml)
+
