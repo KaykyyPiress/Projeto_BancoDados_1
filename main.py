@@ -207,7 +207,7 @@ def gerar_dml():
     
     random.shuffle(alunos_disponiveis)
     for tcc_id in range(1, 21):
-        num_alunos = min(5, len(alunos_disponiveis))
+        num_alunos = random.randint(0,5)
         alunos_tcc = [alunos_disponiveis.pop() for _ in range(num_alunos)]
         for aluno_id in alunos_tcc:
             dml_statements.append(
