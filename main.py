@@ -1,7 +1,7 @@
 import os
 import random
 from faker import Faker
-import psycopg2
+# import psycopg2
 
 fake = Faker('pt_BR')
 
@@ -51,9 +51,10 @@ def gerar_dml():
 
     # Definindo chefes de departamento (1 por departamento)
     for dept in departamentos:
-        chefe = next(p for p in professores if p['id_departamento'] == dept['id'])
+        profs_do_departamento = [p['id'] for p in professores if p['id_departamento'] == dept['id']]
+        chefe = random.choice(profs_do_departamento)
         dml_statements.append(
-            f"UPDATE Departamento SET id_chefe_departamento = {chefe['id']} WHERE id_departamento = {dept['id']};"
+            f"UPDATE Departamento SET id_chefe_departamento = {chefe} WHERE id_departamento = {dept['id']};"
         )
 
     # Inserindo Cursos
@@ -83,7 +84,7 @@ def gerar_dml():
     # Inserindo Disciplinas
     disciplinas = []
     for i in range(1, 31):
-        nome = f"Disciplina de {fake.word().capitalize()}"
+        nome = f"Disciplina de D{i:03}"
         codigo = f"D{i:03}"
         id_departamento = random.choice(departamentos)['id']
         disciplinas.append({"id": i, "id_departamento": id_departamento})
@@ -96,6 +97,7 @@ def gerar_dml():
     # Seleciona apenas disciplinas do mesmo departamento do professor.
     for professor in professores:
         disciplinas_prof = [d for d in disciplinas if d['id_departamento'] == professor['id_departamento']]
+        
         if not disciplinas_prof:
             continue
         for _ in range(random.randint(1, 4)):
@@ -203,45 +205,45 @@ def gerar_dml():
     return "\n".join(dml_statements)
 
 
-def execute_script(script):
-    """
-    Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
-    É necessário dividir o script em comandos individuais e executá-los.
-    """
-    # Atualize as credenciais do Supabase conforme seu projeto.
-    SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
-    SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
-    SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
-    SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
-    SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
+# def execute_script(script):
+#     """
+#     Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
+#     É necessário dividir o script em comandos individuais e executá-los.
+#     """
+#     # Atualize as credenciais do Supabase conforme seu projeto.
+#     SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
+#     SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
+#     SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
+#     SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
+#     SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
 
 
-    try:
-        # Cria a conexão
-        conn = psycopg2.connect(
-            host=SUPABASE_HOST,
-            port=SUPABASE_PORT,
-            dbname=SUPABASE_DATABASE,
-            user=SUPABASE_USER,
-            password=SUPABASE_PASSWORD
-        )
-        cur = conn.cursor()
-        print("Conectado ao Supabase com sucesso.")
+#     try:
+#         # Cria a conexão
+#         conn = psycopg2.connect(
+#             host=SUPABASE_HOST,
+#             port=SUPABASE_PORT,
+#             dbname=SUPABASE_DATABASE,
+#             user=SUPABASE_USER,
+#             password=SUPABASE_PASSWORD
+#         )
+#         cur = conn.cursor()
+#         print("Conectado ao Supabase com sucesso.")
 
-        # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
-        comandos = script.split(";")
-        for comando in comandos:
-            comando = comando.strip()
-            if comando:
-                cur.execute(comando + ";")
+#         # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
+#         comandos = script.split(";")
+#         for comando in comandos:
+#             comando = comando.strip()
+#             if comando:
+#                 cur.execute(comando + ";")
 
-        conn.commit()
-        print("Todos os comandos foram executados com sucesso.")
-        cur.close()
-        conn.close()
+#         conn.commit()
+#         print("Todos os comandos foram executados com sucesso.")
+#         cur.close()
+#         conn.close()
 
-    except Exception as e:
-        print(f"Erro ao executar os comandos no Supabase: {e}")
+#     except Exception as e:
+#         print(f"Erro ao executar os comandos no Supabase: {e}")
 
 
 if __name__ == "__main__":
@@ -254,5 +256,5 @@ if __name__ == "__main__":
     print("Script DML gerado e salvo com sucesso!")
 
     # Executa o script no Supabase
-    execute_script(script_dml)
+    # execute_script(script_dml)
 
