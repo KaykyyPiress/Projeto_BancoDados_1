@@ -75,7 +75,8 @@ def gerar_dml():
         cpf = fake.cpf()
         matricula = f"MAT{i:05}"
         id_curso = random.choice(cursos)['id']
-        alunos.append(i)
+        aluno = {'id': i, 'curso': id_curso}
+        alunos.append(aluno)
         dml_statements.append(
             f"INSERT INTO Aluno (id_aluno, nome, cpf, email, matricula, id_curso) VALUES "
             f"({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@alunoFEI.com.br', '{matricula}', {id_curso});"
@@ -110,10 +111,20 @@ def gerar_dml():
 
     # Inserindo Histórico de Alunos
     # Lógica que garante que, se um aluno reprovou, em alguma tentativa posterior ele obterá aprovação.
-    for aluno_id in alunos:
+    for aluno in alunos:
         aprovados = {}    # Registra disciplinas já aprovadas
         tentativas = {}   # Registra disciplinas já tentadas e com falha (ainda não aprovadas)
 
+        curso_aluno = aluno['curso']
+        departamento = 0
+        
+        for curso in cursos:
+            if curso['id'] == curso_aluno:
+                departamento = curso['id_departamento']
+
+        disciplinas_curso = [d for d in disciplinas if d['id_departamento'] == departamento]
+        profs_do_departamento = [p['id'] for p in professores if p['id_departamento'] == departamento]
+   
         # Gera semestres únicos e ordenados cronologicamente para o aluno
         num_semestres = random.randint(2, 4)
         semestres_set = set()
@@ -134,7 +145,7 @@ def gerar_dml():
             iteracao = 0
             while len(disciplinas_no_semestre) < quantidade and iteracao < 100:
                 iteracao += 1
-                disciplina = random.choice(disciplinas)
+                disciplina = random.choice(disciplinas_curso)
                 disciplina_id = disciplina['id']
 
                 if disciplina_id in aprovados:
@@ -151,10 +162,10 @@ def gerar_dml():
                     nota = round(random.uniform(0, 10), 2)
                     situacao = 'aprovado' if nota >= 5 else 'reprovado'
 
-                professor_id = random.choice(professores)['id']
+                professor_id = random.choice(profs_do_departamento)
                 dml_statements.append(
                     f"INSERT INTO Historico_Aluno (id_aluno, id_disciplina, semestre, nota, situacao, id_professor) VALUES "
-                    f"({aluno_id}, {disciplina_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
+                    f"({aluno['id']}, {disciplina_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
                 )
 
                 if situacao == 'aprovado':
@@ -177,7 +188,7 @@ def gerar_dml():
                     situacao = 'aprovado'
                     dml_statements.append(
                         f"INSERT INTO Historico_Aluno (id_aluno, id_disciplina, semestre, nota, situacao, id_professor) VALUES "
-                        f"({aluno_id}, {disc_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
+                        f"({aluno['id']}, {disc_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
                     )
                     aprovados[disc_id] = 'aprovado'
                     del tentativas[disc_id]
@@ -193,13 +204,14 @@ def gerar_dml():
 
     # Inserindo alunos em TCCs (máximo 5 por TCC)
     alunos_disponiveis = alunos.copy()
+    
     random.shuffle(alunos_disponiveis)
     for tcc_id in range(1, 21):
         num_alunos = min(5, len(alunos_disponiveis))
         alunos_tcc = [alunos_disponiveis.pop() for _ in range(num_alunos)]
         for aluno_id in alunos_tcc:
             dml_statements.append(
-                f"INSERT INTO Aluno_TCC (id_tcc, id_aluno) VALUES ({tcc_id}, {aluno_id});"
+                f"INSERT INTO Aluno_TCC (id_tcc, id_aluno) VALUES ({tcc_id}, {aluno_id['id']});"
             )
 
     return "\n".join(dml_statements)
