@@ -274,7 +274,7 @@ if __name__ == "__main__":
     script_dml = gerar_dml()
 
     # Opcional: gravar o script em um arquivo
-    with open("sql/dml_script.txt", "w", encoding='utf-8') as file:
+    with open("sql/dml_script.sql", "w", encoding='utf-8') as file:
         file.write(script_dml)
     print("Script DML gerado e salvo com sucesso!")
 
