@@ -22,7 +22,8 @@ def gerar_dml():
         "DELETE FROM Aluno;",
         "DELETE FROM Curso;",
         "DELETE FROM Professor;",
-        "DELETE FROM Departamento;"
+        "DELETE FROM Departamento;",
+        "DELETE FROM Grade_Curso;"
     ]
 
     departamentos = []
@@ -145,7 +146,7 @@ def gerar_dml():
             iteracao = 0
             while len(disciplinas_no_semestre) < quantidade and iteracao < 100:
                 iteracao += 1
-                disciplina = random.choice(disciplinas_curso)
+                disciplina = random.choice(disciplinas)
                 disciplina_id = disciplina['id']
 
                 if disciplina_id in aprovados:
@@ -206,12 +207,22 @@ def gerar_dml():
     alunos_disponiveis = alunos.copy()
     
     random.shuffle(alunos_disponiveis)
+    
     for tcc_id in range(1, 21):
-        num_alunos = random.randint(0,5)
+        num_alunos = random.randint(1,5)
         alunos_tcc = [alunos_disponiveis.pop() for _ in range(num_alunos)]
         for aluno_id in alunos_tcc:
             dml_statements.append(
                 f"INSERT INTO Aluno_TCC (id_tcc, id_aluno) VALUES ({tcc_id}, {aluno_id['id']});"
+            )
+
+    # Gerando a matriz curricular do curso
+    for c in cursos:
+        random.shuffle(disciplinas)
+        num_disc = random.randint(10,15)
+        for i in range(1, num_disc):
+            dml_statements.append(
+                f"INSERT INTO Grade_Curso (id_curso, id_disciplina) VALUES ({c['id']}, {disciplinas[i]['id']});"
             )
 
     return "\n".join(dml_statements)
