@@ -77,3 +77,10 @@ CREATE TABLE Aluno_TCC (
     id_aluno INT REFERENCES Aluno(id_aluno),
     UNIQUE (id_tcc, id_aluno)
 );
+
+-- Tabela: grade_curso
+CREATE TABLE Grade_Curso (
+    id_curso INT REFERENCES Curso(id_curso),
+    id_disciplina INT REFERENCES Disciplina(id_disciplina),
+    UNIQUE (id_curso, id_disciplina)
+)
