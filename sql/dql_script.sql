@@ -58,3 +58,46 @@ SELECT p.nome as nom_prof, COALESCE(d.nome, 'nenhum') as chefe_dpto, COALESCE(c.
 FROM professor p
 LEFT JOIN departamento d ON p.id_professor = d.id_chefe_departamento
 LEFT JOIN curso c ON p.id_professor = c.id_coordenador
+
+
+--Encontre os nomes de todos os estudantes.
+SELECT nome
+FROM Aluno;
+
+--Liste os IDs e nomes de todos os professores.
+SELECT id_professor, nome
+FROM Professor;
+
+--Encontre os nomes de todos os estudantes que cursaram "Engenharia Civil"
+SELECT a.nome AS NomeEstudante,
+       c.nome AS NomeCurso
+FROM Aluno a
+JOIN Curso c ON a.id_curso = c.id_curso
+WHERE c.nome = 'Engenharia Civil';
+
+-- Encontre o número total de estudantes que cursaram "Engenharia Civil"
+SELECT COUNT(*) AS total_estudantes
+FROM Aluno a
+JOIN Curso c ON a.id_curso = c.id_curso
+WHERE c.nome = 'Engenharia Civil';
+
+--Liste os professores que ministraram cursos com mais de 20 alunos matriculados
+SELECT p.id_professor, p.nome
+FROM Professor p
+JOIN Curso c ON p.id_professor = c.id_coordenador
+JOIN Aluno a ON c.id_curso = a.id_curso
+GROUP BY p.id_professor, p.nome
+HAVING COUNT(a.id_aluno) > 20;
+
+--encontre os nomes dos professores que ministraram cursos nos quais todos os alunos receberam nota '10'.
+SELECT DISTINCT p.nome
+FROM Professor p
+JOIN (
+    SELECT ha.id_professor, ha.id_disciplina, ha.semestre
+    FROM Historico_Aluno ha
+    GROUP BY ha.id_professor, ha.id_disciplina, ha.semestre
+    HAVING MIN(ha.nota) = 10 AND MAX(ha.nota) = 10
+) AS cursos_com_10
+ON p.id_professor = cursos_com_10.id_professor;
+
+
