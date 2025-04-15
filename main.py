@@ -64,7 +64,7 @@ def gerar_dml():
         id_departamento = departamentos[i - 1]['id']
         profs_do_departamento = [p['id'] for p in professores if p['id_departamento'] == id_departamento]
         id_coordenador = random.choice(profs_do_departamento)
-        cursos.append({"id": i, "id_departamento": id_departamento})
+        cursos.append({"id": i, "id_departamento": id_departamento, "nome": nome})
         dml_statements.append(
             f"INSERT INTO Curso (id_curso, nome, id_departamento, id_coordenador) VALUES "
             f"({i}, '{nome}', {id_departamento}, {id_coordenador});"
@@ -83,32 +83,61 @@ def gerar_dml():
             f"({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@alunoFEI.com.br', '{matricula}', {id_curso});"
         )
 
-    # Inserindo Disciplinas
+    #DICIONARIO RELACIONANDO AS DISCIPLINAS COM OS CURSOS
+       disciplinas_por_curso = {
+        "Engenharia Civil": [
+            "Mecânica dos Solos", "Estruturas de Concreto", "Construção Civil", 
+            "Geotecnia", "Hidráulica", "Desenho Técnico"
+        ],
+        "Ciencia da Computacao": [
+            "Algoritmos", "Estruturas de Dados", "Redes de Computadores", 
+            "Banco de Dados", "Sistemas Operacionais", "Inteligência Artificial"
+        ],
+        "Estatistica": [
+            "Probabilidade", "Inferência Estatística", "Modelos Lineares", 
+            "Estatística Computacional", "Análise Multivariada", "Séries Temporais"
+        ],
+        "Fisica Computacional": [
+            "Mecânica Computacional", "Simulações Numéricas", "Modelos Físicos", 
+            "Termodinâmica Computacional", "Física Matemática", "Programação Científica"
+        ],
+        "Quimica Aplicada": [
+            "Química Orgânica", "Química Inorgânica", "Fisico-Química", 
+            "Química Industrial", "Química Analítica", "Química Ambiental"
+        ]
+    }
+    
+    # Inserindo Disciplinas relacionando-as aos cursos
     disciplinas = []
-    for i in range(1, 31):
-        nome = f"Disciplina de D{i:03}"
-        codigo = f"D{i:03}"
-        id_departamento = random.choice(departamentos)['id']
-        disciplinas.append({"id": i, "id_departamento": id_departamento})
-        dml_statements.append(
-            f"INSERT INTO Disciplina (id_disciplina, nome, codigo, id_departamento) VALUES "
-            f"({i}, '{nome}', '{codigo}', {id_departamento});"
-        )
-
-    # Inserindo Histórico de Professores
-    # Seleciona apenas disciplinas do mesmo departamento do professor.
-    for professor in professores:
-        disciplinas_prof = [d for d in disciplinas if d['id_departamento'] == professor['id_departamento']]
-        
-        if not disciplinas_prof:
-            continue
-        for _ in range(random.randint(1, 4)):
-            disciplina = random.choice(disciplinas_prof)
-            semestre = gerar_semestre()
-            dml_statements.append(
-                f"INSERT INTO Historico_Professor (id_professor, id_disciplina, semestre) VALUES "
-                f"({professor['id']}, {disciplina['id']}, '{semestre}');"
-            )
+    discipline_counter = 1
+    for curso in cursos:
+        nome_curso = curso.get("nome")
+        id_departamento = curso.get("id_departamento")
+        # Caso haja disciplinas definidas para o curso
+        if nome_curso in disciplinas_por_curso:
+            for nome_disciplina in disciplinas_por_curso[nome_curso]:
+                codigo = f"D{discipline_counter:03}"
+                disciplinas.append({"id": discipline_counter, "id_departamento": id_departamento})
+                dml_statements.append(
+                    f"INSERT INTO Disciplina (id_disciplina, nome, codigo, id_departamento) VALUES "
+                    f"({discipline_counter}, '{nome_disciplina}', '{codigo}', {id_departamento});"
+                )
+                discipline_counter += 1
+    
+        # Inserindo Histórico de Professores
+        # Seleciona apenas disciplinas do mesmo departamento do professor.
+        for professor in professores:
+            disciplinas_prof = [d for d in disciplinas if d['id_departamento'] == professor['id_departamento']]
+            
+            if not disciplinas_prof:
+                continue
+            for _ in range(random.randint(1, 4)):
+                disciplina = random.choice(disciplinas_prof)
+                semestre = gerar_semestre()
+                dml_statements.append(
+                    f"INSERT INTO Historico_Professor (id_professor, id_disciplina, semestre) VALUES "
+                    f"({professor['id']}, {disciplina['id']}, '{semestre}');"
+                )
 
     # Inserindo Histórico de Alunos
     # Lógica que garante que, se um aluno reprovou, em alguma tentativa posterior ele obterá aprovação.
