@@ -118,3 +118,171 @@ FROM professor p
 
 LEFT JOIN departamento d ON p.id_professor = d.id_chefe_departamento
 LEFT JOIN curso c ON p.id_professor = c.id_coordenador
+
+
+-- Encontre os nomes dos estudantes que cursaram matérias em mais de 3 departamentos.
+SELECT 
+    a.nome AS nome_aluno
+	,count(distinct d.id_departamento) as total_dpto
+
+FROM aluno a
+
+LEFT JOIN historico_aluno ha ON a.id_aluno = ha.id_aluno
+LEFT JOIN disciplina d ON ha.id_disciplina = d.id_disciplina
+
+GROUP BY a.nome
+
+HAVING COUNT(DISTINCT d.id_departamento) >= 3;
+
+
+-- Encontre o número total de estudantes que cursaram "Engenharia Civil"
+SELECT 
+	COUNT(*) AS total_estudantes
+
+FROM aluno a
+
+LEFT JOIN curso c ON a.id_curso = c.id_curso
+
+WHERE c.nome = 'Engenharia Civil';
+
+
+--Liste os professores que ministraram cursos com mais de 20 alunos matriculados
+SELECT DISTINCT 
+    p.id_professor,
+    p.nome AS nome_professor
+
+FROM historico_aluno ha
+
+LEFT JOIN aluno a ON ha.id_aluno = a.id_aluno
+LEFT JOIN curso c ON a.id_curso = c.id_curso
+LEFT JOIN professor p ON ha.id_professor = p.id_professor
+
+WHERE a.id_curso IN (
+        SELECT id_curso
+        FROM Aluno
+        GROUP BY id_curso
+        HAVING COUNT(*) > 20
+);
+
+
+-- Liste os nomes dos estudantes que não cursaram nenhuma disciplina no departamento de "Matematica".
+SELECT 
+    a.id_aluno,
+    a.nome AS nome_aluno
+
+FROM aluno a
+
+WHERE NOT EXISTS (
+        SELECT 1
+        FROM historico_aluno ha
+        LEFT JOIN disciplina d ON ha.id_disciplina = d.id_disciplina
+        LEFT JOIN departamento dep ON d.id_departamento = dep.id_departamento
+        WHERE ha.id_aluno = a.id_aluno AND dep.nome = 'Matematica'
+);
+
+
+-- Liste as disciplinas que foram ministradas por mais de um professor em semestres diferentes.
+SELECT 
+    d.nome AS nome_disciplina,
+    COUNT(DISTINCT hp.id_professor) AS num_professores,
+    COUNT(DISTINCT hp.semestre) AS num_semestres
+
+FROM historico_Professor hp
+
+LEFT JOIN disciplina d ON hp.id_disciplina = d.id_disciplina
+
+GROUP BY d.id_disciplina
+
+HAVING COUNT(DISTINCT hp.id_professor) > 1 AND COUNT(DISTINCT hp.semestre) > 1;
+
+
+-- Liste a média das notas de aprovação por disciplina
+SELECT 
+    d.id_disciplina,
+    d.nome AS nome_disciplina,
+    AVG(ha.nota) AS media_aprovacao
+
+FROM historico_aluno ha
+
+LEFT JOIN disciplina d ON ha.id_disciplina = d.id_disciplina
+
+WHERE ha.situacao = 'aprovado'
+
+GROUP BY d.id_disciplina, d.nome
+
+ORDER BY media_aprovacao DESC;
+
+
+-- liste os alunos e a quantidade de vezes que cursaram cada uma das disciplinas 
+SELECT 
+    a.id_aluno,
+    a.nome AS nome_aluno,
+    d.id_disciplina,
+    d.nome AS nome_disciplina,
+    COUNT(*) AS vezes_cursada
+
+FROM historico_aluno ha
+
+LEFT JOIN aluno a ON ha.id_aluno = a.id_aluno
+LEFT JOIN disciplina d ON ha.id_disciplina = d.id_disciplina
+
+GROUP BY a.id_aluno, a.nome, d.id_disciplina, d.nome
+
+ORDER BY a.id_aluno, d.id_disciplina;
+
+
+-- Encontre o número de alunos matriculados em cada curso e liste-os por título de curso
+SELECT 
+    c.nome AS nome_curso,
+    COUNT(a.id_aluno) AS total_alunos
+
+FROM curso c
+
+LEFT JOIN aluno a ON a.id_curso = c.id_curso
+
+GROUP BY c.id_curso, c.nome
+
+ORDER BY c.nome;
+
+
+-- Liste os 10 alunos com maior desempenho e seus respectivos cursos e media de aprovação
+SELECT 
+    a.id_aluno,
+    a.nome AS nome_aluno,
+    c.nome AS nome_curso,
+    ROUND(AVG(ha.nota), 2) AS media_aprovacao
+
+FROM aluno a
+
+LEFT JOIN curso c ON a.id_curso = c.id_curso
+LEFT JOIN historico_aluno ha ON a.id_aluno = ha.id_aluno
+
+WHERE ha.situacao = 'aprovado'
+
+GROUP BY a.id_aluno, a.nome, c.nome
+
+ORDER BY media_aprovacao DESC
+
+LIMIT 10;
+
+
+-- liste os 10 professores com alunos com maior indice de aprovação
+SELECT 
+    p.id_professor,
+    p.nome AS nome_professor,
+    COUNT(CASE WHEN ha.situacao = 'aprovado' THEN 1 END) * 1.0 / COUNT(*) AS indice_aprovacao,
+    COUNT(*) AS total_alunos
+
+FROM historico_aluno ha
+
+LEFT JOIN professor p ON ha.id_professor = p.id_professor
+
+WHERE ha.id_professor IS NOT NULL
+
+GROUP BY p.id_professor, p.nome
+
+HAVING COUNT(*) > 0
+
+ORDER BY indice_aprovacao DESC
+
+LIMIT 10;
