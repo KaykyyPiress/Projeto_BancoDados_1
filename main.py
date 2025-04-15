@@ -1,7 +1,7 @@
 import os
 import random
 from faker import Faker
-import psycopg2
+# import psycopg2
 
 fake = Faker('pt_BR')
 
@@ -22,7 +22,8 @@ def gerar_dml():
         "DELETE FROM Aluno;",
         "DELETE FROM Curso;",
         "DELETE FROM Professor;",
-        "DELETE FROM Departamento;"
+        "DELETE FROM Departamento;",
+        "DELETE FROM Grade_Curso;"
     ]
 
     departamentos = []
@@ -51,9 +52,10 @@ def gerar_dml():
 
     # Definindo chefes de departamento (1 por departamento)
     for dept in departamentos:
-        chefe = next(p for p in professores if p['id_departamento'] == dept['id'])
+        profs_do_departamento = [p['id'] for p in professores if p['id_departamento'] == dept['id']]
+        chefe = random.choice(profs_do_departamento)
         dml_statements.append(
-            f"UPDATE Departamento SET id_chefe_departamento = {chefe['id']} WHERE id_departamento = {dept['id']};"
+            f"UPDATE Departamento SET id_chefe_departamento = {chefe} WHERE id_departamento = {dept['id']};"
         )
 
     # Inserindo Cursos
@@ -74,7 +76,8 @@ def gerar_dml():
         cpf = fake.cpf()
         matricula = f"MAT{i:05}"
         id_curso = random.choice(cursos)['id']
-        alunos.append(i)
+        aluno = {'id': i, 'curso': id_curso}
+        alunos.append(aluno)
         dml_statements.append(
             f"INSERT INTO Aluno (id_aluno, nome, cpf, email, matricula, id_curso) VALUES "
             f"({i}, '{nome}', '{cpf}', '{(nome.split(' ')[0]).lower()}@alunoFEI.com.br', '{matricula}', {id_curso});"
@@ -83,7 +86,7 @@ def gerar_dml():
     # Inserindo Disciplinas
     disciplinas = []
     for i in range(1, 31):
-        nome = f"Disciplina de {fake.word().capitalize()}"
+        nome = f"Disciplina de D{i:03}"
         codigo = f"D{i:03}"
         id_departamento = random.choice(departamentos)['id']
         disciplinas.append({"id": i, "id_departamento": id_departamento})
@@ -96,6 +99,7 @@ def gerar_dml():
     # Seleciona apenas disciplinas do mesmo departamento do professor.
     for professor in professores:
         disciplinas_prof = [d for d in disciplinas if d['id_departamento'] == professor['id_departamento']]
+        
         if not disciplinas_prof:
             continue
         for _ in range(random.randint(1, 4)):
@@ -108,10 +112,20 @@ def gerar_dml():
 
     # Inserindo Histórico de Alunos
     # Lógica que garante que, se um aluno reprovou, em alguma tentativa posterior ele obterá aprovação.
-    for aluno_id in alunos:
+    for aluno in alunos:
         aprovados = {}    # Registra disciplinas já aprovadas
         tentativas = {}   # Registra disciplinas já tentadas e com falha (ainda não aprovadas)
 
+        curso_aluno = aluno['curso']
+        departamento = 0
+        
+        for curso in cursos:
+            if curso['id'] == curso_aluno:
+                departamento = curso['id_departamento']
+
+        disciplinas_curso = [d for d in disciplinas if d['id_departamento'] == departamento]
+        profs_do_departamento = [p['id'] for p in professores if p['id_departamento'] == departamento]
+   
         # Gera semestres únicos e ordenados cronologicamente para o aluno
         num_semestres = random.randint(2, 4)
         semestres_set = set()
@@ -149,10 +163,10 @@ def gerar_dml():
                     nota = round(random.uniform(0, 10), 2)
                     situacao = 'aprovado' if nota >= 5 else 'reprovado'
 
-                professor_id = random.choice(professores)['id']
+                professor_id = random.choice(profs_do_departamento)
                 dml_statements.append(
                     f"INSERT INTO Historico_Aluno (id_aluno, id_disciplina, semestre, nota, situacao, id_professor) VALUES "
-                    f"({aluno_id}, {disciplina_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
+                    f"({aluno['id']}, {disciplina_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
                 )
 
                 if situacao == 'aprovado':
@@ -175,7 +189,7 @@ def gerar_dml():
                     situacao = 'aprovado'
                     dml_statements.append(
                         f"INSERT INTO Historico_Aluno (id_aluno, id_disciplina, semestre, nota, situacao, id_professor) VALUES "
-                        f"({aluno_id}, {disc_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
+                        f"({aluno['id']}, {disc_id}, '{semestre}', {nota}, '{situacao}', {professor_id});"
                     )
                     aprovados[disc_id] = 'aprovado'
                     del tentativas[disc_id]
@@ -191,56 +205,68 @@ def gerar_dml():
 
     # Inserindo alunos em TCCs (máximo 5 por TCC)
     alunos_disponiveis = alunos.copy()
+    
     random.shuffle(alunos_disponiveis)
+    
     for tcc_id in range(1, 21):
-        num_alunos = min(5, len(alunos_disponiveis))
+        num_alunos = random.randint(1,5)
         alunos_tcc = [alunos_disponiveis.pop() for _ in range(num_alunos)]
         for aluno_id in alunos_tcc:
             dml_statements.append(
-                f"INSERT INTO Aluno_TCC (id_tcc, id_aluno) VALUES ({tcc_id}, {aluno_id});"
+                f"INSERT INTO Aluno_TCC (id_tcc, id_aluno) VALUES ({tcc_id}, {aluno_id['id']});"
+            )
+
+    # Gerando a matriz curricular do curso
+    for c in cursos:
+        random.shuffle(disciplinas)
+        num_disc = random.randint(10,15)
+        for i in range(1, num_disc):
+            dml_statements.append(
+                f"INSERT INTO Grade_Curso (id_curso, id_disciplina) VALUES ({c['id']}, {disciplinas[i]['id']});"
             )
 
     return "\n".join(dml_statements)
 
 
-def execute_script(script):
-    """
-    Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
-    É necessário dividir o script em comandos individuais e executá-los.
-    """
-    # Atualize as credenciais do Supabase conforme seu projeto.
-    SUPABASE_HOST = os.getenv("SUPABASE_HOST", "your-supabase-host")         # e.g. "db.xxxxxx.supabase.co"
-    SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "5432"))
-    SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "your-database")
-    SUPABASE_USER = os.getenv("SUPABASE_USER", "your-username")
-    SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "your-password")
+# def execute_script(script):
+#     """
+#     Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
+#     É necessário dividir o script em comandos individuais e executá-los.
+#     """
+#     # Atualize as credenciais do Supabase conforme seu projeto.
+#     SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
+#     SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
+#     SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
+#     SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
+#     SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
 
-    try:
-        # Cria a conexão
-        conn = psycopg2.connect(
-            host=SUPABASE_HOST,
-            port=SUPABASE_PORT,
-            dbname=SUPABASE_DATABASE,
-            user=SUPABASE_USER,
-            password=SUPABASE_PASSWORD
-        )
-        cur = conn.cursor()
-        print("Conectado ao Supabase com sucesso.")
 
-        # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
-        comandos = script.split(";")
-        for comando in comandos:
-            comando = comando.strip()
-            if comando:
-                cur.execute(comando + ";")
+#     try:
+#         # Cria a conexão
+#         conn = psycopg2.connect(
+#             host=SUPABASE_HOST,
+#             port=SUPABASE_PORT,
+#             dbname=SUPABASE_DATABASE,
+#             user=SUPABASE_USER,
+#             password=SUPABASE_PASSWORD
+#         )
+#         cur = conn.cursor()
+#         print("Conectado ao Supabase com sucesso.")
 
-        conn.commit()
-        print("Todos os comandos foram executados com sucesso.")
-        cur.close()
-        conn.close()
+#         # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
+#         comandos = script.split(";")
+#         for comando in comandos:
+#             comando = comando.strip()
+#             if comando:
+#                 cur.execute(comando + ";")
 
-    except Exception as e:
-        print(f"Erro ao executar os comandos no Supabase: {e}")
+#         conn.commit()
+#         print("Todos os comandos foram executados com sucesso.")
+#         cur.close()
+#         conn.close()
+
+#     except Exception as e:
+#         print(f"Erro ao executar os comandos no Supabase: {e}")
 
 
 if __name__ == "__main__":
@@ -253,4 +279,4 @@ if __name__ == "__main__":
     print("Script DML gerado e salvo com sucesso!")
 
     # Executa o script no Supabase
-    execute_script(script_dml)
+    # execute_script(script_dml)
