@@ -56,16 +56,13 @@ Foram implementadas queries SQL específicas para validar a integridade e funcio
 ## 📂 Organização dos Arquivos
 
 ```
-Projeto_Universidade/
-├── docs/
-│   ├── modelo_ER.png
-│   └── modelo_relacional.png
 ├── sql/
 │   ├── ddl_tabelas.sql
 │   ├── dml_script.sql
 │   └── dql_script.sql
-├── data_generator/
-│   └── main.py
+├── db_connection.py
+├── main.py
+├── validadorSupa.py
 └── README.md
 ```
 
@@ -74,11 +71,16 @@ Projeto_Universidade/
 ## 🚀 Como Executar
 
 1. Clone o repositório.
-2. Execute os scripts em ordem: 
-   - `ddl_tabelas.sql` (Criação do banco)
-   - `dml_script.sql` (Banco com dados fictícios)
-   - `dql_script.sql` (Execução das queries específicas)
-
+2. No terminal, execute os comandos:
+   - `pip install faker`
+   - `pip install psycopg2`
+3. Em seguida, configure as seguintes variaveis de conexão com o supabase no arquivo db_connection.py:
+   - `SUPABASE_USER` (linha 11)
+   - `SUPABASE_PASSWORD` (linha 12)
+3. Execute os scripts em ordem: 
+   - `main.py`
+   - `validadorSupa.py`
+     
 ---
 
 ## 📝 Autor

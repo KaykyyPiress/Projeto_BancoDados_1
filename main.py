@@ -1,7 +1,7 @@
 import os
 import random
 from faker import Faker
-import psycopg2
+from db_connection import get_connection
 
 fake = Faker('pt_BR')
 
@@ -257,46 +257,52 @@ def gerar_dml():
     return "\n".join(dml_statements)
 
 
-def execute_script(script):
+def execute_script_from_files():
     """
-    Recebe o script DML como uma string e executa cada comando de insert/delete na base Supabase.
-    É necessário dividir o script em comandos individuais e executá-los.
+    Executa os scripts 'ddl_script.sql' e 'dml_script.sql' da raiz do projeto.
+    O DDL é executado primeiro, e só se ele for bem-sucedido o DML é executado.
     """
-    # Atualize as credenciais do Supabase conforme seu projeto.
-    SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
-    SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
-    SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
-    SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
-    SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
-
+    ddl_path = "sql/ddl_tabelas.sql"
+    dml_path = "sql/dml_script.sql"
 
     try:
-        # Cria a conexão
-        conn = psycopg2.connect(
-            host=SUPABASE_HOST,
-            port=SUPABASE_PORT,
-            dbname=SUPABASE_DATABASE,
-            user=SUPABASE_USER,
-            password=SUPABASE_PASSWORD
-        )
+        with open(ddl_path, 'r', encoding='utf-8') as ddl_file:
+            ddl_script = ddl_file.read()
+        with open(dml_path, 'r', encoding='utf-8') as dml_file:
+            dml_script = dml_file.read()
+
+        conn = get_connection()
         cur = conn.cursor()
         print("Conectado ao Supabase com sucesso.")
 
-        # Divide o script pelos pontos e vírgulas e executa cada comando que não esteja vazio.
-        comandos = script.split(";")
-        for comando in comandos:
-            comando = comando.strip()
-            if comando:
-                cur.execute(comando + ";")
+        # Executa DDL
+        if ddl_script:
+            print("Executando script DDL...")
+            for comando in ddl_script.split(";"):
+                comando = comando.strip()
+                if comando:
+                    cur.execute(comando + ";")
+            conn.commit()
+            print("Script DDL executado com sucesso.")
 
-        conn.commit()
-        print("Todos os comandos foram executados com sucesso.")
+        # Executa DML
+        if dml_script:
+            print("Executando script DML...")
+            for comando in dml_script.split(";"):
+                comando = comando.strip()
+                if comando:
+                    cur.execute(comando + ";")
+            conn.commit()
+            print("Script DML executado com sucesso.")
+
         cur.close()
         conn.close()
+        print("Todos os comandos foram executados com sucesso.")
 
+    except FileNotFoundError as fe:
+        print(f"Arquivo não encontrado: {fe.filename}")
     except Exception as e:
         print(f"Erro ao executar os comandos no Supabase: {e}")
-
 
 if __name__ == "__main__":
     # Gera o script DML
@@ -308,4 +314,4 @@ if __name__ == "__main__":
     print("Script DML gerado e salvo com sucesso!")
 
     # Executa o script no Supabase
-    execute_script(script_dml)
+    execute_script_from_files()

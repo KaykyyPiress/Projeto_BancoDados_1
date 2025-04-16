@@ -1,5 +1,4 @@
-import os
-import psycopg2
+from db_connection import get_connection
 
 def check_consistency(conn):
     cur = conn.cursor()
@@ -69,21 +68,8 @@ def check_consistency(conn):
 
 
 if __name__ == "__main__":
-    # Configure suas credenciais do Supabase
-    SUPABASE_HOST = os.getenv("SUPABASE_HOST", "aws-0-sa-east-1.pooler.supabase.com")         # e.g. "db.xxxxxx.supabase.co"
-    SUPABASE_PORT = int(os.getenv("SUPABASE_PORT", "6543"))
-    SUPABASE_DATABASE = os.getenv("SUPABASE_DATABASE", "postgres")
-    SUPABASE_USER = os.getenv("SUPABASE_USER", "postgres.azriarqzqraykgbsqlst")
-    SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "MinasGerais123")
-
     try:
-        conn = psycopg2.connect(
-            host=SUPABASE_HOST,
-            port=SUPABASE_PORT,
-            dbname=SUPABASE_DATABASE,
-            user=SUPABASE_USER,
-            password=SUPABASE_PASSWORD
-        )
+        conn = get_connection()
         print("Conectado ao Supabase com sucesso!")
         check_consistency(conn)
         conn.close()
