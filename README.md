@@ -60,10 +60,10 @@ Foram implementadas queries SQL específicas para validar a integridade e funcio
 │   ├── ddl_tabelas.sql
 │   ├── dml_script.sql
 │   └── dql_script.sql
+├── README.md
 ├── db_connection.py
 ├── main.py
-├── validadorSupa.py
-└── README.md
+└── validadorSupa.py
 ```
 
 ---
