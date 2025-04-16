@@ -54,11 +54,11 @@ Projeto_Universidade/
 │   ├── modelo_ER.png
 │   └── modelo_relacional.png
 ├── sql/
-│   ├── create_tables.sql
-│   ├── insert_data.sql
-│   └── queries.sql
+│   ├── ddl_tabelas.sql
+│   ├── dml_script.sql
+│   └── dql_script.sql
 ├── data_generator/
-│   └── generator.java
+│   └── main.py
 └── README.md
 ```
 
@@ -67,10 +67,10 @@ Projeto_Universidade/
 ## 🚀 Como Executar
 
 1. Clone o repositório.
-2. Execute os scripts em ordem:
-   - `create_tables.sql` (Criação do banco)
-   - `insert_data.sql` (Popular o banco com dados fictícios)
-   - `queries.sql` (Execução das queries específicas)
+2. Execute os scripts em ordem: 
+   - `ddl_tabelas.sql` (Criação do banco)
+   - `dml_script.sql` (Banco com dados fictícios)
+   - `dql_script.sql` (Execução das queries específicas)
 
 ---
 
